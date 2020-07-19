@@ -38,7 +38,7 @@ class Actor(models.Model):
 
 class Genre(models.Model):
     """Жанри"""
-    name = models.CharField("імя", max_length=100)
+    name = models.CharField("жанр", max_length=100)
     description = models.TextField("опис")
     url = models.SlugField(max_length=160, unique=True)
 

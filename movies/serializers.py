@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Movie, Review
+from .models import Movie, Review, Rating
 
 
 class FilterReviewListSerializer(serializers.ListSerializer):
@@ -30,7 +30,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Review
-        fields = "__all__"
+        fields = "__all__"  # Вивід усіх полів
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -54,3 +54,16 @@ class MovieDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Movie
         exclude = ("draft", )  # Вивід усіх полів крім draft
+
+
+class CreateRatingSerializer(serializers.ModelSerializer):
+    """Добавлення рейтингу користувачем"""
+    class Meta:
+        model = Rating
+        fields = ("star", "movie")
+
+    def create(self, validated_data):
+        rating = Rating.objects.update_or_create(ip=validated_data.get('ip', None),
+                                                 movie=validated_data.get('movie', None),
+                                                 defaults={'star': validated_data.get('star')})
+        return rating
