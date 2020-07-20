@@ -1,37 +1,38 @@
 from rest_framework import serializers
+from rest_framework.serializers import ListSerializer, Serializer, ModelSerializer
 
 from .models import Movie, Review, Rating, Actor
 
 
-class FilterReviewListSerializer(serializers.ListSerializer):
+class FilterReviewListSerializer(ListSerializer):
     """Фільтр коментарів, тільки parents"""
     def to_representation(self, data):
         data = data.filter(parent=None)
         return super().to_representation(data)
 
 
-class RecursiveSerializer(serializers.Serializer):
+class RecursiveSerializer(Serializer):
     """Вивід рекурсивно children"""
     def to_representation(self, value):
         serializer = self.parent.parent.__class__(value, context=self.context)
         return serializer.data
 
 
-class ActorListSerializer(serializers.ModelSerializer):
+class ActorListSerializer(ModelSerializer):
     """Вивід списка акторів та режисерів"""
     class Meta:
         model = Actor
         fields = ("id", "name", "image")
 
 
-class ActorDetailSerializer(serializers.ModelSerializer):
+class ActorDetailSerializer(ModelSerializer):
     """Вивід інформації про конкретного актора чи режисера"""
     class Meta:
         model = Actor
         fields = "__all__"
 
 
-class MovieListSerializer(serializers.ModelSerializer):
+class MovieListSerializer(ModelSerializer):
     """Список фільмів"""
     rating_user = serializers.BooleanField()
     middle_star = serializers.IntegerField()
@@ -41,7 +42,7 @@ class MovieListSerializer(serializers.ModelSerializer):
         fields = ("id", "title", "tagline", "category", "rating_user", "middle_star")
 
 
-class ReviewCreateSerializer(serializers.ModelSerializer):
+class ReviewCreateSerializer(ModelSerializer):
     """Додавання відгуку"""
 
     class Meta:
@@ -49,7 +50,7 @@ class ReviewCreateSerializer(serializers.ModelSerializer):
         fields = "__all__"  # Вивід усіх полів
 
 
-class ReviewSerializer(serializers.ModelSerializer):
+class ReviewSerializer(ModelSerializer):
     """Вивід відгуку"""
     children = RecursiveSerializer(many=True)
 
@@ -59,7 +60,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         fields = ("name", "text", "children")
 
 
-class MovieDetailSerializer(serializers.ModelSerializer):
+class MovieDetailSerializer(ModelSerializer):
     """Один фільм"""
     category = serializers.SlugRelatedField(slug_field="name", read_only=True)
     directors = ActorListSerializer(read_only=True, many=True)
@@ -72,14 +73,14 @@ class MovieDetailSerializer(serializers.ModelSerializer):
         exclude = ("draft", )  # Вивід усіх полів крім draft
 
 
-class CreateRatingSerializer(serializers.ModelSerializer):
+class CreateRatingSerializer(ModelSerializer):
     """Добавлення рейтингу користувачем"""
     class Meta:
         model = Rating
         fields = ("star", "movie")
 
     def create(self, validated_data):
-        rating = Rating.objects.update_or_create(ip=validated_data.get('ip', None),
-                                                 movie=validated_data.get('movie', None),
-                                                 defaults={'star': validated_data.get('star')})
+        rating, _ = Rating.objects.update_or_create(ip=validated_data.get('ip', None),
+                                                    movie=validated_data.get('movie', None),
+                                                    defaults={'star': validated_data.get('star')})
         return rating
